@@ -100,6 +100,14 @@ python3 scripts/surf_report.py --lat 50.735 --lon -1.705 --horizon 72h --output 
 python3 scripts/normalize_surf_data.py
 ```
 
+## Best Practices
+
+Use the skill responsibly and keep API usage sustainable:
+
+- Cache responses and avoid rapid polling; keep request rates gentle to public endpoints.
+- Persist fetched data locally where appropriate to reduce repeated lookups and duplicate requests.
+- Validate and adapt to endpoint field changes by inspecting returned JSON before downstream assumptions.
+
 ## Further Documentation
 
 - Detailed API behavior and schema: [reference.md](reference.md)
