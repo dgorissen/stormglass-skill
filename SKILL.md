@@ -1,6 +1,16 @@
 ---
 name: stormglass-surf-skill
 description: Fetch surf-relevant ocean conditions from Stormglass by spot name or coordinates, including current snapshot and 1-3 day forecast windows with tides, gusts, and water temperature. Use when users ask for surf reports, wave or swell conditions, tide timing, wind, gusts, or water temperature for a beach or surf spot.
+version: 1.0.2
+metadata:
+  openclaw:
+    requires:
+      env:
+        - STORMGLASS_API_KEY
+      bins:
+        - python3
+    primaryEnv: STORMGLASS_API_KEY
+    homepage: https://github.com/dgorissen/stormglass-skill
 ---
 
 # Stormglass Surf Skill
