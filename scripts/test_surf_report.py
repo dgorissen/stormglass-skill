@@ -14,7 +14,6 @@ Uses --mock to avoid external API calls and credentials.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -23,7 +22,7 @@ from typing import List
 
 ROOT = Path(__file__).resolve().parent.parent
 CLI = ROOT / "scripts" / "surf_report.py"
-PYTHON_BIN = os.environ.get("PYTHON_BIN", "/usr/bin/python3")
+PYTHON_BIN = "/usr/bin/python3"
 
 
 def run_case(args: List[str]) -> subprocess.CompletedProcess[str]:

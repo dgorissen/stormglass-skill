@@ -34,6 +34,17 @@ It supports querying by:
 - `STORMGLASS_API_KEY` - required for live Stormglass requests
 - `GOOGLE_GEOCODING_API_KEY` - optional; used when present for `--location`
 
+### Credential Matrix
+
+| Mode | `STORMGLASS_API_KEY` | `GOOGLE_GEOCODING_API_KEY` |
+|---|---|---|
+| `--mock` (offline tests) | not required | not required |
+| live with `--lat/--lon` | required | not required |
+| live with `--location` + Google geocoder | required | optional (preferred when set) |
+| live with `--location` + OSM fallback | required | not required |
+
+Primary credential for this skill is `STORMGLASS_API_KEY`.
+
 ## Quick Start
 
 From repository root:

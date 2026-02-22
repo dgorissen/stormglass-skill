@@ -32,6 +32,17 @@ Optional controls:
 
 In `--mock` mode, no API keys are required.
 
+### Credential Matrix
+
+| Mode | `STORMGLASS_API_KEY` | `GOOGLE_GEOCODING_API_KEY` |
+|---|---|---|
+| `--mock` | not required | not required |
+| live `--lat/--lon` | required | not required |
+| live `--location` with Google | required | optional (preferred when set) |
+| live `--location` with OSM fallback | required | not required |
+
+Primary credential is `STORMGLASS_API_KEY`.
+
 ## Execution Commands
 
 JSON output for cron:
