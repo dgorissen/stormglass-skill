@@ -45,6 +45,7 @@ Query params:
 - `start=<unix-utc-seconds>`
 - `end=<unix-utc-seconds>`
 - optional `source=<provider1,provider2>`
+- optional CLI input `--at=<ISO-8601>` causes the script to include a nearest-hour snapshot for that requested time
 
 Response handling:
 
@@ -101,6 +102,20 @@ Response handling:
     "windDirectionDeg": 215,
     "windGustMps": 7.8,
     "waterTemperatureC": 10.9
+  },
+  "at": {
+    "requestedTime": "2026-02-23T06:00:00Z",
+    "matchedTime": "2026-02-23T06:00:00+00:00",
+    "metrics": {
+      "waveHeightM": 1.0,
+      "swellHeightM": 0.7,
+      "swellPeriodS": 9.1,
+      "swellDirectionDeg": 245.0,
+      "windSpeedMps": 4.8,
+      "windDirectionDeg": 220.0,
+      "windGustMps": 7.0,
+      "waterTemperatureC": 10.7
+    }
   },
   "forecast": {
     "windows": {

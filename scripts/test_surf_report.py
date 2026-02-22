@@ -50,6 +50,29 @@ def assert_json_shape(stdout: str) -> None:
             raise AssertionError(f"Missing now.{key}")
 
 
+def assert_at_shape(stdout: str) -> None:
+    payload = json.loads(stdout)
+    if "at" not in payload:
+        raise AssertionError("Missing top-level key: at")
+    at = payload["at"]
+    for key in ("requestedTime", "matchedTime", "metrics"):
+        if key not in at:
+            raise AssertionError(f"Missing at.{key}")
+    metrics = at["metrics"]
+    for key in (
+        "waveHeightM",
+        "swellHeightM",
+        "swellPeriodS",
+        "swellDirectionDeg",
+        "windSpeedMps",
+        "windDirectionDeg",
+        "windGustMps",
+        "waterTemperatureC",
+    ):
+        if key not in metrics:
+            raise AssertionError(f"Missing at.metrics.{key}")
+
+
 def main() -> int:
     failures = []
 
@@ -71,6 +94,23 @@ def main() -> int:
             "args": ["--lat", "50.735", "--lon", "-1.705", "--horizon", "72h", "--mock", "--output", "pretty"],
             "expect_code": 0,
             "expect_json": False,
+        },
+        {
+            "name": "location with --at timestamp mock",
+            "args": [
+                "--location",
+                "Highcliffe Beach",
+                "--at",
+                "2026-02-23T06:00:00Z",
+                "--horizon",
+                "72h",
+                "--mock",
+                "--output",
+                "json",
+            ],
+            "expect_code": 0,
+            "expect_json": True,
+            "expect_at": True,
         },
         {
             "name": "missing location and coords",
@@ -98,6 +138,8 @@ def main() -> int:
         if ok and case["expect_json"]:
             try:
                 assert_json_shape(proc.stdout)
+                if case.get("expect_at"):
+                    assert_at_shape(proc.stdout)
             except Exception as exc:
                 ok = False
                 failures.append(f"{case['name']}: json validation failed ({exc})")

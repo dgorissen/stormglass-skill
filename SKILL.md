@@ -31,6 +31,7 @@ Provide exactly one location mode:
 Optional controls:
 
 - `--horizon now|24h|48h|72h` (default `72h`)
+- `--at <ISO-8601 UTC timestamp>` for nearest-hour lookup at a specific time
 - `--output json|pretty` (default `json`, recommended for automation)
 - `--source <comma-separated provider list>`
 - `--mock` (offline deterministic data; useful for tests)
@@ -80,6 +81,7 @@ Top-level keys are stable:
 - `meta`: request metadata, timestamps, input mode, optional warnings
 - `location`: resolved place details and coordinates
 - `now`: instantaneous surf-relevant metrics
+- `at`: optional nearest-hour snapshot for the requested `--at` timestamp
 - `forecast`: horizon summaries and best windows
 - `tides`: tide extremes and inferred current tide trend
 

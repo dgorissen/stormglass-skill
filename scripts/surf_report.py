@@ -11,6 +11,7 @@ Usage examples:
   python scripts/surf_report.py --location "Highcliffe Beach" --horizon 72h --output json
   python scripts/surf_report.py --lat 50.735 --lon -1.705 --horizon 24h --output json
   python scripts/surf_report.py --location "Highcliffe Beach" --horizon now --mock --output pretty
+  python scripts/surf_report.py --location "Highcliffe Beach" --at "2026-02-23T06:00:00Z" --output json
 
 Environment:
   STORMGLASS_API_KEY         Required unless --mock.
@@ -80,7 +81,10 @@ def iso_z(dt: datetime) -> str:
 def parse_time(value: str) -> datetime:
     if value.endswith("Z"):
         value = value[:-1] + "+00:00"
-    return datetime.fromisoformat(value).astimezone(timezone.utc)
+    dt = datetime.fromisoformat(value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def to_unix_seconds(dt: datetime) -> int:
@@ -296,6 +300,19 @@ def normalize_hour(hour: Dict[str, Any], source_order: List[str]) -> Dict[str, A
     return out
 
 
+def hour_metrics(hour: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "waveHeightM": hour.get("waveHeightM"),
+        "swellHeightM": hour.get("swellHeightM"),
+        "swellPeriodS": hour.get("swellPeriodS"),
+        "swellDirectionDeg": hour.get("swellDirectionDeg"),
+        "windSpeedMps": hour.get("windSpeedMps"),
+        "windDirectionDeg": hour.get("windDirectionDeg"),
+        "windGustMps": hour.get("windGustMps"),
+        "waterTemperatureC": hour.get("waterTemperatureC"),
+    }
+
+
 def nearest_hour(hours: List[Dict[str, Any]], anchor: datetime) -> Dict[str, Any]:
     def distance(hour: Dict[str, Any]) -> float:
         return abs((parse_time(str(hour["time"])) - anchor).total_seconds())
@@ -410,7 +427,13 @@ def tides_by_day(extremes: List[Dict[str, Any]]) -> Dict[str, Dict[str, List[Dic
 
 
 def mock_payload(
-    anchor: datetime, horizon: str, location_mode: str, lat: float, lon: float, location_query: Optional[str]
+    anchor: datetime,
+    horizon: str,
+    location_mode: str,
+    lat: float,
+    lon: float,
+    location_query: Optional[str],
+    requested_at: Optional[datetime],
 ) -> Dict[str, Any]:
     hours = HORIZON_HOURS[horizon] if horizon != "now" else 24
     normalized_hours: List[Dict[str, Any]] = []
@@ -445,7 +468,16 @@ def mock_payload(
         )
 
     nearest = nearest_hour(normalized_hours, anchor)
-    return {
+    at_block: Optional[Dict[str, Any]] = None
+    if requested_at is not None:
+        nearest_at = nearest_hour(normalized_hours, requested_at)
+        at_block = {
+            "requestedTime": iso_z(requested_at),
+            "matchedTime": nearest_at.get("time"),
+            "metrics": hour_metrics(nearest_at),
+        }
+
+    payload: Dict[str, Any] = {
         "meta": {
             "generatedAt": iso_z(anchor),
             "horizon": horizon,
@@ -468,12 +500,16 @@ def mock_payload(
             "byDay": tides_by_day(extremes),
         },
     }
+    if at_block is not None:
+        payload["at"] = at_block
+    return payload
 
 
 def build_report(args: argparse.Namespace) -> Dict[str, Any]:
     anchor = now_utc()
     sources = parse_sources(args.source)
     warnings: List[str] = []
+    requested_at: Optional[datetime] = parse_time(args.at) if args.at else None
 
     if args.location:
         mode = "location"
@@ -489,7 +525,7 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
     if args.mock:
         lat = args.lat if args.lat is not None else 50.735
         lon = args.lon if args.lon is not None else -1.705
-        return mock_payload(anchor, args.horizon, mode, lat, lon, location_query)
+        return mock_payload(anchor, args.horizon, mode, lat, lon, location_query, requested_at)
 
     stormglass_key = os.environ.get("STORMGLASS_API_KEY")
     if not stormglass_key:
@@ -515,8 +551,13 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
             "googlePlaceId": None,
         }
 
+    start = anchor
     end = anchor + timedelta(hours=HORIZON_HOURS[args.horizon])
-    weather_hours = fetch_weather(lat, lon, stormglass_key, anchor, end, sources, args.timeout)
+    if requested_at is not None:
+        start = min(start, requested_at - timedelta(hours=1))
+        end = max(end, requested_at + timedelta(hours=1))
+
+    weather_hours = fetch_weather(lat, lon, stormglass_key, start, end, sources, args.timeout)
     tide_data = fetch_tides(lat, lon, stormglass_key, anchor, end + timedelta(days=1), args.timeout)
 
     source_order = sources[:] if sources else []
@@ -527,7 +568,7 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
     current = nearest_hour(normalized, anchor)
     extremes = normalize_tides(tide_data)
 
-    return {
+    payload: Dict[str, Any] = {
         "meta": {
             "generatedAt": iso_z(anchor),
             "horizon": args.horizon,
@@ -544,6 +585,14 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
             "byDay": tides_by_day(extremes),
         },
     }
+    if requested_at is not None:
+        nearest_at = nearest_hour(normalized, requested_at)
+        payload["at"] = {
+            "requestedTime": iso_z(requested_at),
+            "matchedTime": nearest_at.get("time"),
+            "metrics": hour_metrics(nearest_at),
+        }
+    return payload
 
 
 def to_pretty(report: Dict[str, Any]) -> str:
@@ -582,6 +631,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--lat", type=float, help="Latitude for direct coordinate mode.")
     parser.add_argument("--lon", type=float, help="Longitude for direct coordinate mode.")
     parser.add_argument("--horizon", choices=["now", "24h", "48h", "72h"], default="72h")
+    parser.add_argument("--at", help="Optional ISO-8601 timestamp; include nearest-hour snapshot for that time.")
     parser.add_argument("--output", choices=["json", "pretty"], default="json")
     parser.add_argument("--source", help="Optional comma-separated Stormglass sources.")
     parser.add_argument("--timeout", type=int, default=20, help="HTTP timeout seconds.")

@@ -100,3 +100,18 @@ python scripts/surf_report.py --lat 50.735 --lon -1.705 --horizon 72h --output j
 Use when:
 
 - You need strict JSON field consistency before another agent consumes the payload.
+
+## Example 9: Specific Timestamp Lookup (Nearest Hour)
+
+Command:
+
+```bash
+python scripts/surf_report.py --location "Highcliffe Beach" --at "2026-02-23T06:00:00Z" --output json
+```
+
+Expected behavior:
+
+- Output includes top-level `at`.
+- `at.requestedTime` reflects your input.
+- `at.matchedTime` is the nearest available forecast hour.
+- `at.metrics` contains wave/swell/wind/gust/water-temp fields for that matched hour.

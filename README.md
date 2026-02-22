@@ -67,6 +67,7 @@ python3 scripts/surf_report.py --location "Highcliffe Beach" --horizon 72h --out
 python3 scripts/surf_report.py \
   (--location "Spot Name" | --lat <LAT> --lon <LON>) \
   [--horizon now|24h|48h|72h] \
+  [--at "YYYY-MM-DDTHH:MM:SSZ"] \
   [--output json|pretty] \
   [--source "sg,noaa"] \
   [--timeout 20] \
@@ -77,6 +78,14 @@ python3 scripts/surf_report.py \
 
 - `--output json` (default): stable machine-readable payload for cron/agent pipelines
 - `--output pretty`: human-readable terminal summary
+
+### Timestamp Lookup
+
+Use `--at` to request conditions for a specific timestamp; the script returns the nearest available forecast hour in an `at` block.
+
+```bash
+python3 scripts/surf_report.py --location "Highcliffe Beach" --at "2026-02-23T06:00:00Z" --output json
+```
 
 ### Exit Codes
 
